@@ -6,7 +6,12 @@
 #include <gdkmm/screen.h>
 #include <gtkmm/box.h>
 #include <gtkmm/label.h>
-#include <gtkmm/entry.h> 
+#include <gtkmm/entry.h>
+#include <gtkmm/grid.h>
+#include <gio/gio.h>
+#include <fstream>
+#include <cstdlib> // For std::system
+#include <string>  // For std::string
 
 class HelloWorld : public Gtk::Window
 {
@@ -16,86 +21,116 @@ public:
 
 protected:
     void on_button_clicked(const std::string &button_name);
+
     Gtk::Button m_button1, m_button2, m_button3; // Declare three buttons
     Gtk::Box m_box;                              // A container to hold the label, entry, and buttons
-    Gtk::Box m_button_box;                       // A container to hold the buttons horizontally
-    Gtk::Label m_label;                          // Declare a label
-    Gtk::Entry m_entry;                          // Declare an entry widget
+    Gtk::Box m_button_box;                       // A container to hold the buttons vertically
+    Gtk::Box m_entry_box;                        // A container to hold the buttons vertically
+
+    Gtk::Box welcome_box;
+    Gtk::Label m_label; // Declare a label
+    Gtk::Entry m_entry; // Declare an entry widget
+    bool label_replaced = false;
+    Gtk::Grid grid;
 };
 
 HelloWorld::HelloWorld()
-    : m_button1("Button 1"), m_button2("Button 2"), m_button3("Button 3"),
-      m_label("Enter text below:"), m_entry() // Initialize label and entry
+    : m_button1(""), m_button2(""), m_button3(""),
+      m_label("Welcom !!, Let's Start New Coding Session") // m_entry() // Initialize label and entry
 {
     // Set window properties
     set_title("NOTION");
+    set_default_size(700, 500);
 
-    // Initialize the box container (vertical layout for label and entry)
-    m_box.set_orientation(Gtk::ORIENTATION_VERTICAL);
+    // Initialize the box container (horizontal layout for label and entry)
+    m_box.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
     m_box.set_homogeneous(false); // Allow varying button sizes
-    m_box.set_spacing(20);        // Add space between elements in the container
+    m_box.set_spacing(10);        // Add space between elements in the container
 
-    // Customize button margins
-    m_button1.set_margin_top(10);    // External padding around button 1
-    m_button1.set_margin_bottom(10); // External padding around button 1
-    m_button1.set_margin_right(10);
-    m_button1.set_margin_left(10);
+    // Load images
+    auto image1 = Gtk::make_managed<Gtk::Image>("icons/icon1.png");
+    auto image2 = Gtk::make_managed<Gtk::Image>("icons/icon2.png");
+    auto image3 = Gtk::make_managed<Gtk::Image>("icons/icon3.png");
 
-    m_button2.set_margin_top(10);    // External padding around button 2
-    m_button2.set_margin_bottom(10); // External padding around button 2
-    m_button2.set_margin_right(10);
-    m_button2.set_margin_left(10);
+    // Resize images to 32x32
+    auto pixbuf1 = Gdk::Pixbuf::create_from_file("icons/icon1.png");
+    auto pixbuf2 = Gdk::Pixbuf::create_from_file("icons/icon2.png");
+    auto pixbuf3 = Gdk::Pixbuf::create_from_file("icons/icon3.png");
 
-    m_button3.set_margin_top(10);    // External padding around button 3
-    m_button3.set_margin_bottom(10); // External padding around button 3
-    m_button3.set_margin_right(10);
-    m_button3.set_margin_left(10);
-    // Set buttons to expand in the box (optional but ensures resizing)
-    m_button1.set_hexpand(true);
-    m_button2.set_hexpand(true);
-    m_button3.set_hexpand(true);
+    image1->set(pixbuf1->scale_simple(32, 32, Gdk::INTERP_BILINEAR));
+    image2->set(pixbuf2->scale_simple(32, 32, Gdk::INTERP_BILINEAR));
+    image3->set(pixbuf3->scale_simple(32, 32, Gdk::INTERP_BILINEAR));
 
-    // Load and apply CSS styles with padding and glowing effect
-    auto css_provider = Gtk::CssProvider::create();
-    css_provider->load_from_data(R"(
-        button {
-            background-color: lightblue;
-            color: darkblue;
-            font: bold 14px Arial;
-            border-radius: 10px;
-            padding: 15px 20px; /* 15px padding top-bottom, 20px left-right */
-            transition: box-shadow 0.3s ease;
-        }
+    // Attach images to buttons
+    m_button1.set_image(*image1);
+    m_button2.set_image(*image2);
+    m_button3.set_image(*image3);
 
-        button:hover {
-            box-shadow: 0 0 15px 5px rgba(0, 0, 255, 0.7);  /* Glowing blue on hover */
-        }
+    // Ensure images are always shown
+    m_button1.set_always_show_image(true);
+    m_button2.set_always_show_image(true);
+    m_button3.set_always_show_image(true);
 
-        button:active {
-            box-shadow: 0 0 25px 10px rgba(0, 0, 255, 1);   /* Stronger glow on click */
-        }
-    )");
+    // Set fixed size and disable expansion for buttons
+
+    m_button1.set_size_request(80, 50);
+    m_button2.set_size_request(80, 50);
+    m_button3.set_size_request(80, 50);
+
+    // Initialize the grid layout for buttons
+    grid.set_row_spacing(15);    // Set spacing between rows
+    grid.set_column_spacing(15); // Set spacing between columns
+
+    grid.attach(m_button1, 0, 0);
+    grid.attach(m_button2, 0, 1);
+    grid.attach(m_button3, 0, 2);
+
+    // Load and apply CSS styles from a file
+    // auto css_provider = Gtk::CssProvider::create();
+
+    // // Correctly load the CSS file
+    // Glib::RefPtr<Gio::File> file = Gio::File::create_for_path("style.css");
+    // css_provider->load_from_file(file);
 
     // Apply the CSS to the buttons' style context
     auto screen = Gdk::Screen::get_default();
-    m_button1.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-    m_button2.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-    m_button3.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    // m_button1.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    // m_button2.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    // m_button3.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 
     // Create a new box for the buttons (horizontal layout)
-    m_button_box.set_orientation(Gtk::ORIENTATION_HORIZONTAL); // Set horizontal orientation
-    m_button_box.set_homogeneous(true);                        // Make buttons the same size
-    m_button_box.set_spacing(10);                              // Add space between buttons
+    m_button_box.set_orientation(Gtk::ORIENTATION_VERTICAL); // Set horizontal orientation
+    m_button_box.set_homogeneous(true);                      // Make buttons the same size
+    m_button_box.set_spacing(10);                            // Add space between buttons
+
+    // Disable expansion for each button
+    m_button1.set_hexpand(false);
+    m_button1.set_vexpand(false);
+    m_button2.set_hexpand(false);
+    m_button2.set_vexpand(false);
+    m_button3.set_hexpand(false);
+    m_button3.set_vexpand(false);
 
     // Add buttons to the horizontal button box
-    m_button_box.pack_start(m_button1);
-    m_button_box.pack_start(m_button2);
-    m_button_box.pack_start(m_button3);
+    // Add buttons to the button box without expansion
+    m_button_box.pack_start(m_button1, Gtk::PACK_SHRINK);
+    m_button_box.pack_start(m_button2, Gtk::PACK_SHRINK);
+    m_button_box.pack_start(m_button3, Gtk::PACK_SHRINK);
 
-    // Add the label, entry, and button box to the main container
-    m_box.pack_start(m_label);      // Add label above entry
-    m_box.pack_start(m_entry);      // Add entry below the label
-    m_box.pack_start(m_button_box); // Add the button box (horizontal layout)
+    grid.set_row_spacing(15);    // Set spacing between rows
+    grid.set_column_spacing(15); // Set spacing between columns
+
+    grid.attach(m_button1, 0, 0);
+    grid.attach(m_button2, 0, 1);
+    grid.attach(m_button3, 0, 2);
+
+    grid.set_valign(Gtk::ALIGN_CENTER); // Center the grid vertically
+
+    // Add components to the main box
+    m_box.pack_start(grid, Gtk::PACK_SHRINK);
+    m_box.pack_start(m_label);
+
+    // Add the button box (horizontal layout)
 
     // Connect signals
     m_button1.signal_clicked().connect([this]()
@@ -116,14 +151,60 @@ HelloWorld::~HelloWorld() {}
 
 void HelloWorld::on_button_clicked(const std::string &button_name)
 {
-    // Retrieve the text entered in the entry field
-    std::string entered_text = m_entry.get_text();
-    std::cout << button_name << " clicked! Entered text: " << entered_text << std::endl;
+    // std::string entered_text = m_entry.get_text(); // Get the current text from the entry widget
+
+    if (button_name == "Button 1")
+    {
+        // github
+        // m_entry.set_text(""); // Clear the entry box
+
+        const char *url = "https://github.com/amgadalharazi";
+
+        // Platform-specific command
+#ifdef _WIN32
+        std::string command = "start " + std::string(url); // Windows
+#elif __linux__
+        std::string command = "xdg-open " + std::string(url); // Linux
+#elif __APPLE__
+        std::string command = "open " + std::string(url); // macOS
+#else
+#error "Unsupported platform"
+#endif
+
+        std::system(command.c_str()); // Execute the command
+    }
+
+    else if (button_name == "Button 2")
+    {
+        // m_entry.set_text("Hello, Gtkmm!"); // Set predefined text in the entry
+        std::cout << button_name << " clicked! Set predefined text." << std::endl;
+    }
+    if (button_name == "Button 3" && !label_replaced)
+    {
+        // Remove the label and add the entry
+        m_box.remove(m_label);
+
+        m_entry.set_text("Enter your text here");
+
+        // Set horizontal expansion only
+        // m_entry.set_hexpand(true);
+        // m_entry.set_vexpand(false);
+
+        // m_entry_box.pack_start(m_entry, Gtk::PACK_SHRINK);
+        // m_box.pack_start(m_entry_box, Gtk::PACK_SHRINK);
+        // m_entry_box.pack_start(m_entry);
+        m_entry_box.set_orientation(Gtk::ORIENTATION_VERTICAL);
+        m_entry_box.pack_start(m_entry, Gtk::PACK_SHRINK);
+        m_box.pack_start(m_entry_box);
+
+        // label_replaced = true;
+        show_all_children();
+    }
 }
 
 int main(int argc, char *argv[])
 {
-    auto app = Gtk::Application::create(argc, argv, "com.example.GtkExample");
+    auto app = Gtk::Application::create(argc, argv, "hizbu.com");
     HelloWorld helloworld;
     return app->run(helloworld);
 }
