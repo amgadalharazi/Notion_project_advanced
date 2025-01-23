@@ -8,7 +8,14 @@
 #include <gtkmm/label.h>
 #include <gtkmm/entry.h>
 #include <gtkmm/grid.h>
+#include <gtkmm/listbox.h>
+#include <gtkmm/treeview.h>
+#include <gtkmm/liststore.h>
 #include <gio/gio.h>
+#include <vector>
+#include <glibmm/ustring.h>
+
+#include <string>
 #include <fstream>
 #include <cstdlib> // For std::system
 #include <string>  // For std::string
@@ -18,10 +25,24 @@ class HelloWorld : public Gtk::Window
 public:
     HelloWorld();
     virtual ~HelloWorld();
+    int n = 0;
+    char text[100];
 
 protected:
     void on_button_clicked(const std::string &button_name);
+    void on_AddTask_clicked(const std::string &add_button)
+    {
+        std::string entry_text = m_entry.get_text();
+        if (!entry_text.empty())
+        {
+            int task_no = n + 1;                                                 // Clearer variable name for 'no'
+            auto label = Gtk::make_managed<Gtk::Label>(std::to_string(task_no)); // Create a label with the task number
+            std::string text = m_entry.get_text();                               // Retrieve text from the entry
 
+            tasks.pack_start(*label); // Add the label to the container
+            m_entry.set_text("");
+        }
+    }
     Gtk::Button m_button1, m_button2, m_button3; // Declare three buttons
     Gtk::Box m_box;                              // A container to hold the label, entry, and buttons
     Gtk::Box m_button_box;                       // A container to hold the buttons vertically
@@ -29,9 +50,14 @@ protected:
 
     Gtk::Box welcome_box;
     Gtk::Label m_label; // Declare a label
+    Gtk::Button add_task;
     Gtk::Entry m_entry; // Declare an entry widget
     bool label_replaced = false;
     Gtk::Grid grid;
+    Gtk::Box add_task_space;
+    bool on_entry_clicked(GdkEventButton *event);
+    Gtk::Box tasks;
+    Glib::RefPtr<Gtk::ListStore> m_refTreeModel;
 };
 
 HelloWorld::HelloWorld()
@@ -86,17 +112,23 @@ HelloWorld::HelloWorld()
     grid.attach(m_button3, 0, 2);
 
     // Load and apply CSS styles from a file
-    // auto css_provider = Gtk::CssProvider::create();
+    auto css_provider = Gtk::CssProvider::create();
 
     // // Correctly load the CSS file
-    // Glib::RefPtr<Gio::File> file = Gio::File::create_for_path("style.css");
-    // css_provider->load_from_file(file);
+    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path("style.css");
+    css_provider->load_from_file(file);
 
     // Apply the CSS to the buttons' style context
     auto screen = Gdk::Screen::get_default();
-    // m_button1.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-    // m_button2.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-    // m_button3.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    m_button1.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    m_button2.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    m_button3.get_style_context()->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+    m_button1.signal_enter_notify_event().connect([&](GdkEventCrossing *)
+                                                  { m_button1.override_background_color(Gdk::RGBA("blue")); return false; });
+
+    m_button1.signal_leave_notify_event().connect([&](GdkEventCrossing *)
+                                                  {  m_button1.unset_background_color();  return false; });
 
     // Create a new box for the buttons (horizontal layout)
     m_button_box.set_orientation(Gtk::ORIENTATION_VERTICAL); // Set horizontal orientation
@@ -119,6 +151,7 @@ HelloWorld::HelloWorld()
 
     grid.set_row_spacing(15);    // Set spacing between rows
     grid.set_column_spacing(15); // Set spacing between columns
+    grid.set_margin_left(10);
 
     grid.attach(m_button1, 0, 0);
     grid.attach(m_button2, 0, 1);
@@ -129,8 +162,6 @@ HelloWorld::HelloWorld()
     // Add components to the main box
     m_box.pack_start(grid, Gtk::PACK_SHRINK);
     m_box.pack_start(m_label);
-
-    // Add the button box (horizontal layout)
 
     // Connect signals
     m_button1.signal_clicked().connect([this]()
@@ -184,18 +215,28 @@ void HelloWorld::on_button_clicked(const std::string &button_name)
         // Remove the label and add the entry
         m_box.remove(m_label);
 
-        m_entry.set_text("Enter your text here");
+        m_entry.set_placeholder_text("Enter your task here...");
+        m_entry_box.set_margin_top(20);
+        m_entry_box.set_margin_left(10);
+        add_task.set_label("Add");
+        add_task.signal_clicked().connect([this]()
+                                          { on_AddTask_clicked("add"); });
+        add_task.set_margin_left(10);
+        add_task.set_size_request(80, 50);
+        add_task.set_margin_right(10);
 
-        // Set horizontal expansion only
-        // m_entry.set_hexpand(true);
-        // m_entry.set_vexpand(false);
+        add_task_space.pack_start(m_entry);
+        add_task_space.pack_start(add_task, Gtk::PACK_SHRINK);
+        add_task_space.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
 
-        // m_entry_box.pack_start(m_entry, Gtk::PACK_SHRINK);
-        // m_box.pack_start(m_entry_box, Gtk::PACK_SHRINK);
-        // m_entry_box.pack_start(m_entry);
         m_entry_box.set_orientation(Gtk::ORIENTATION_VERTICAL);
-        m_entry_box.pack_start(m_entry, Gtk::PACK_SHRINK);
-        m_box.pack_start(m_entry_box);
+        m_entry_box.pack_start(add_task_space, Gtk::PACK_SHRINK);
+
+        tasks.set_orientation(Gtk::ORIENTATION_VERTICAL);
+        tasks.pack_start(m_entry_box, Gtk::PACK_SHRINK);
+
+        m_box.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
+        m_box.pack_start(tasks);
 
         // label_replaced = true;
         show_all_children();
@@ -204,7 +245,7 @@ void HelloWorld::on_button_clicked(const std::string &button_name)
 
 int main(int argc, char *argv[])
 {
-    auto app = Gtk::Application::create(argc, argv, "hizbu.com");
+    auto app = Gtk::Application::create(argc, argv, "hizbu.com"); // Widgets
     HelloWorld helloworld;
     return app->run(helloworld);
 }
