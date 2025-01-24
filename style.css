@@ -1,14 +1,8 @@
-button {
-    background-color: lightblue;
-    color: darkblue;
-    font: bold 14px Arial;
-    border-radius: 10px;
-    padding: 15px 20px;
-    /* 15px padding top-bottom, 20px left-right */
-    transition: box-shadow 0.3s ease;
-}
-
-button:active {
-    box-shadow: 0 0 25px 10px rgba(0, 0, 255, 1);
-    /* Stronger glow on click */
+Button {
+    font-size: 14px;
+    color: #9f3131;
+    background-color: #f0f0f0;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }

@@ -1,0 +1,27 @@
+.custom-label {
+    color: #3498db;
+    /* Text color */
+    font-size: 16px;
+    /* Font size */
+    font-weight: bold;
+    /* Font weight */
+    background-color: #ecf0f1;
+    /* Background color */
+    padding: 10px;
+    /* Padding around the text */
+    border-radius: 5px;
+}
+
+/* Default state for the check button */
+.custom_check_button {
+    background-color: #f9f9f9;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 10px;
+    transition: all 0.3s ease;
+}
+
+.custom_check_button.clicked {
+    background-color: #28a745; /* Green background */
+    color: white; /* White text */
+}
