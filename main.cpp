@@ -13,6 +13,7 @@
 #include <gtkmm/liststore.h>
 #include <gtkmm/checkbutton.h>
 #include <gtkmm/textview.h>
+#include <gtkmm/scrolledwindow.h>
 #include <gio/gio.h>
 #include <vector>
 #include <glibmm/main.h>
@@ -21,6 +22,8 @@
 #include <fstream>
 #include <cstdlib> // For std::system
 #include <string>  // For std::string
+
+using namespace std;
 
 class HelloWorld : public Gtk::Window
 {
@@ -32,6 +35,14 @@ public:
 
 protected:
     void on_button_clicked(const std::string &button_name);
+    void on_AddNote_clicked(const std::string &add_note)
+    {
+        if (add_note == "addnote")
+        {
+            cout << "e+hello world" << endl;
+        }
+        cout << "hello world" << endl;
+    }
     void on_RemoveTask_clicked(const std::string &remove_button, Gtk::Box *task_box)
     {
         // Schedule the removal of the task after a 5-second delay
@@ -132,12 +143,18 @@ protected:
     Gtk::Box welcome_box;
     Gtk::Label m_label; // Declare a label
     Gtk::Button add_task;
+    Gtk::Button add_note;
     Gtk::Entry m_entry; // Declare an entry widget
+    Gtk::TextView m_notes_textview;
     bool label_replaced = false;
     Gtk::Grid grid;
     Gtk::Box add_task_space;
     bool on_entry_clicked(GdkEventButton *event);
     Gtk::Box tasks;
+    Gtk::Box notes_window;
+    Gtk::Box notes_writing;
+    Gtk::Box notes_entry;
+    Gtk::Box nn;
     Glib::RefPtr<Gtk::ListStore> m_refTreeModel;
 };
 
@@ -308,6 +325,7 @@ void HelloWorld::on_button_clicked(const std::string &button_name)
     {
         // Remove the label and add the entry
         m_box.remove(m_label);
+        m_box.remove(notes_window);
 
         m_entry.set_placeholder_text("Enter your task here...");
         m_entry_box.set_margin_top(20);
@@ -338,8 +356,36 @@ void HelloWorld::on_button_clicked(const std::string &button_name)
     }
     if (button_name == "Button 4")
     {
+        // Remove existing widgets
         m_box.remove(m_label);
         m_box.remove(tasks);
+        
+        m_entry.set_placeholder_text("Enter your task here...");
+        m_entry_box.set_margin_top(20);
+        m_entry_box.set_margin_left(10);
+        add_task.set_label("Add");
+        m_entry.set_text("");
+        add_task.signal_clicked().connect([this]()
+                                          { on_AddTask_clicked("add"); });
+        add_task.set_margin_left(10);
+        add_task.set_size_request(80, 50);
+        add_task.set_margin_right(10);
+
+        add_task_space.pack_start(m_entry);
+        add_task_space.pack_start(add_task, Gtk::PACK_SHRINK);
+        add_task_space.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
+
+        m_entry_box.set_orientation(Gtk::ORIENTATION_VERTICAL);
+        m_entry_box.pack_start(add_task_space, Gtk::PACK_SHRINK);
+
+        tasks.set_orientation(Gtk::ORIENTATION_VERTICAL);
+        tasks.pack_start(m_entry_box, Gtk::PACK_SHRINK);
+
+        m_box.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
+        m_box.pack_start(tasks);
+
+        // label_replaced = true;
+        show_all_children();
     }
 }
 
